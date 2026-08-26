@@ -46,7 +46,14 @@ func (c *Coordinator) Allocate(reports []model.BrakingReport) ([]model.Allocatio
 		if report.Capacity < 0 {
 			continue
 		}
-		current, _ := c.reg.Lookup(report.TrainID)
+		current, ok := c.reg.Lookup(report.TrainID)
+		if !ok {
+			// 上报了但未登记的列车：不能分配，记录为缺失而非崩溃。
+			c.misses++
+			c.missing[report.TrainID] = true
+			continue
+		}
+		delete(c.missing, report.TrainID)
 		if !current.Braking {
 			continue
 		}
@@ -128,5 +135,12 @@ func (c *Coordinator) StaleReleaseCount() int {
 }
 
 func (c *Coordinator) MissingTrains() []string {
-	return nil
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := make([]string, 0, len(c.missing))
+	for id := range c.missing {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
 }

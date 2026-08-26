@@ -52,7 +52,7 @@ func (r *Registry) Lookup(trainID string) (*model.TrainState, bool) {
 	defer r.mu.RUnlock()
 	current, ok := r.trains[trainID]
 	if !ok {
-		return nil, true
+		return nil, false
 	}
 	return current, true
 }
