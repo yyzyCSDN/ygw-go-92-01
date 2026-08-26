@@ -129,6 +129,8 @@ func (d *Device) Status() model.DeviceStatus {
 }
 
 func (d *Device) SwitchTo(state model.AbsorberState) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	d.state = state
 }
 

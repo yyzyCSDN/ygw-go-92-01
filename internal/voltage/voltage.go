@@ -55,6 +55,9 @@ func (c *Controller) Sample(voltage float64) {
 }
 
 func (c *Controller) SwitchToAbsorbing() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cancelPendingWait()
 	if err := c.abs.Engage(); err != nil {
 		return err
 	}
@@ -65,6 +68,9 @@ func (c *Controller) SwitchToAbsorbing() error {
 }
 
 func (c *Controller) SwitchToRestoring() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cancelPendingWait()
 	c.abs.SwitchTo(model.AbsorberIdle)
 	c.state = model.VoltageRestoring
 	c.inv.Enable()
