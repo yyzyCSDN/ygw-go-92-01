@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>再生制动能量回收控制台</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 2rem; background: #f5f7fa; color: #1f2937; }
+h1 { font-size: 1.5rem; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+.metric { font-size: 1.8rem; font-weight: 600; }
+.label { color: #6b7280; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<h1>城市轨道交通再生制动能量回收控制台</h1>
+<div class="card">
+<div class="grid">
+<div><div class="label">接触网电压</div><div class="metric" id="voltage">-</div></div>
+<div><div class="label">控制状态</div><div class="metric" id="state">-</div></div>
+<div><div class="label">已分配容量</div><div class="metric" id="allocated">-</div></div>
+<div><div class="label">在编列车</div><div class="metric" id="trains">-</div></div>
+<div><div class="label">告警数</div><div class="metric" id="alarms">-</div></div>
+<div><div class="label">逆变回馈</div><div class="metric" id="inverter">-</div></div>
+</div>
+</div>
+<script>
+async function refresh() {
+  try {
+    const res = await fetch("/api/v1/status");
+    const data = await res.json();
+    document.getElementById("voltage").textContent = data.voltage;
+    document.getElementById("state").textContent = data.state;
+    document.getElementById("allocated").textContent = data.allocated;
+    document.getElementById("trains").textContent = data.trains;
+    document.getElementById("alarms").textContent = data.alarms;
+    document.getElementById("inverter").textContent = data.inverter ? "on" : "off";
+  } catch (err) {
+    document.getElementById("state").textContent = "disconnected";
+  }
+}
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
