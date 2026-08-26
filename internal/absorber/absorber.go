@@ -93,14 +93,20 @@ func (d *Device) Discharge() error {
 }
 
 func (d *Device) AddCapacity(capacity float64) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	d.allocated += capacity
 }
 
 func (d *Device) Allocated() float64 {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	return d.allocated
 }
 
 func (d *Device) ResetToIdle() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	d.state = model.AbsorberIdle
 	d.allocated = 0
 }

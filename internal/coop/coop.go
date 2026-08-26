@@ -34,6 +34,8 @@ func NewCoordinator(reg *train.Registry, abs *absorber.Device) *Coordinator {
 }
 
 func (c *Coordinator) Allocate(reports []model.BrakingReport) ([]model.Allocation, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.state = model.CoopAllocating
 	out := make([]model.Allocation, 0, len(reports))
 	for _, report := range reports {
