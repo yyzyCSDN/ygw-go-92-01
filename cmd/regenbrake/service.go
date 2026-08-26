@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -67,13 +68,30 @@ func NewService(cfg Config) *Service {
 func (s *Service) SampleVoltage(value float64) error {
 	s.voltage.Sample(value)
 	if s.voltage.OverThreshold() {
-		if err := s.voltage.SwitchToAbsorbing(); err != nil {
-			return err
-		}
-		return s.alarm.Engage("A01")
+		return s.engageAbsorberWithRetry("A01")
 	}
 	s.voltage.SwitchToRestoring()
 	return nil
+}
+
+// engageAbsorberWithRetry 投入吸收装置：投入失败时如实上报并有限次重试，
+// 任何一次成功即视为已投入；全部失败则把最后一次错误返回，
+// 且此时电压状态保持 high（不会显示成"已投入"）。
+func (s *Service) engageAbsorberWithRetry(deviceID string) error {
+	const maxAttempts = 3
+	var last error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err := s.voltage.SwitchToAbsorbing()
+		if err == nil {
+			// 投入成功：清除告警并返回。
+			s.alarm.ClearAlarm(deviceID)
+			return nil
+		}
+		// 投入失败：如实上报（保留告警），不压下错误，继续重试。
+		last = fmt.Errorf("engage attempt %d/%d on %s: %w", attempt, maxAttempts, deviceID, err)
+		s.alarm.ReportEngageFailure(deviceID, err.Error())
+	}
+	return last
 }
 
 func (s *Service) RegisterTrain(state model.TrainState) {

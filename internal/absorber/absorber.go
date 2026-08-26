@@ -49,9 +49,18 @@ func (d *Device) Engage() error {
 	if d.status == model.StatusFault {
 		return model.ErrDeviceFault
 	}
-	_ = d.driver.Engage()
+	if err := d.driver.Engage(); err != nil {
+		// 投入失败如实记录：绝不能在未真正吸收的情况下把状态标成 absorbing，
+		// 否则系统会显示"已投入"而装置并不吸收，电压继续升高。
+		// 状态保持 idle 以允许上层重试；故障原因与计数保留供上报。
+		d.faultReason = err.Error()
+		d.faults = append(d.faults, err.Error())
+		d.metrics.RecordFault()
+		return fmt.Errorf("engage device %s: %w", d.id, err)
+	}
 	d.state = model.AbsorberAbsorbing
 	d.status = model.StatusOnline
+	d.metrics.RecordEngage()
 	return nil
 }
 

@@ -51,9 +51,24 @@ func (m *Manager) Engage(deviceID string) error {
 	if device == nil {
 		return model.ErrDeviceFault
 	}
-	_ = device.Engage()
+	if err := device.Engage(); err != nil {
+		// 投入失败必须如实上报，不得压下错误后还清除告警、谎称成功。
+		m.raise(deviceID, err.Error())
+		return err
+	}
 	m.clear(deviceID)
 	return nil
+}
+
+// ReportEngageFailure 如实上报一次投入失败（保留告警，不调用驱动）。
+// 供上层在自行重试驱动投入时同步上报每次失败。
+func (m *Manager) ReportEngageFailure(deviceID, reason string) {
+	m.raise(deviceID, reason)
+}
+
+// ClearAlarm 在确认投入成功后清除该装置的告警。
+func (m *Manager) ClearAlarm(deviceID string) {
+	m.clear(deviceID)
 }
 
 func (m *Manager) RestoreDevice(deviceID string) error {
